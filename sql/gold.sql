@@ -28,7 +28,7 @@ CREATE TABLE public.orders (
     client_id integer,
     order_date date,
     store_id integer,
-    quantity integer,
+    quantity integer
 );
 
 --
@@ -38,7 +38,7 @@ CREATE TABLE public.orders (
 CREATE TABLE public.products (
     product_id integer NOT NULL,
     product_name character varying(255),
-    aisle character varying(127)
+    aisle character varying(127),
     department character varying(127)
 );
 
@@ -67,5 +67,5 @@ CREATE TABLE public.dates (
 CREATE TABLE public.out_of_stock (
     product_id int NOT NULL,
     order_date date NOT NULL,
-    store_id integer,
+    store_id integer
 );
