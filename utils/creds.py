@@ -9,6 +9,7 @@ class Credentials:
     DEFAULT_HDFS_CONN_ID = "hdfs_server"
     DEFAULT_SERVER_NAME = "prod_server"
     CONN_SPARK_ID = "spark_server"
+    CONN_GOLD_DB_ID = "gold_db_server"
 
     @staticmethod
     def get_oos_creds(conn_id:str) -> dict:
