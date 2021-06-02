@@ -102,7 +102,7 @@ class ExtractOOSOperator(BaseOperator):
             raise ResourceWarning(msg)
 
 
-class ExtractOOSOperatorLocalFS(ExtractOOSOperator):
+class ExtractOOS2LocalFSOperator(ExtractOOSOperator):
 
     def _get_cache_strategy(self
                           , data_source:DailyDataSource
@@ -113,7 +113,7 @@ class ExtractOOSOperatorLocalFS(ExtractOOSOperator):
         return cache
 
 
-class ExtractOOSOperatorHDFS(ExtractOOSOperator):
+class ExtractOOS2HDFSOperator(ExtractOOSOperator):
 
     def __init__(self
                , hdfs_conn_id:str = DEFAULT_HDFS_CONN_ID
