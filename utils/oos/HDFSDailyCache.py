@@ -1,14 +1,13 @@
 import json
 import pathlib
-import shutil
 from datetime import date
 from typing import Optional
 
 from hdfs import InsecureClient
 from hdfs import Client
 
-from .FileDailyCache import FileDailyCache
-from .Server import DailyDataSource
+from utils.oos.FileDailyCache import FileDailyCache
+from utils.oos.Server import DailyDataSource
 
 
 class HDFSDailyCache(FileDailyCache):

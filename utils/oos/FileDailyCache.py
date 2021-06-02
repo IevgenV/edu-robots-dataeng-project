@@ -4,8 +4,8 @@ import shutil
 from datetime import date
 from typing import Optional
 
-from .Cache import Cache
-from .Server import DailyDataSource
+from utils.oos.Cache import Cache
+from utils.oos.Server import DailyDataSource
 
 
 class FileDailyCache(Cache):
