@@ -1,5 +1,4 @@
 import pathlib
-
 from datetime import datetime
 
 from airflow import DAG
@@ -8,7 +7,7 @@ from operators.TransformOOSOperator import TransformOOSOperator
 from utils.creds import Credentials
 
 
- # Path to the directory where the out-of-stock data has to be stored/cached in json
+# Path to the directory where the out-of-stock data has to be stored/cached in json
 DATA_PATH_OOS_BRONZE = pathlib.Path("/bronze/oos")
 
 # Path to the directory where the out-of-stock data has to be stored/cached in parquet
@@ -29,31 +28,6 @@ dag = DAG(
     , default_args=DEFAULT_ARGS
 )
 
-# oos_load_task = PythonOperator(
-#     task_id='load_oos_bronze',
-#     python_callable=load_oos,
-#     provide_context=True,
-#     op_kwargs={
-#         "server_name": get_oos_connection_id(),
-#         "cache_path": DATA_PATH_OOS_BRONZE,
-#         "creds": get_oos_creds,
-#         "cache_strategy": get_hdfs_cache_strategy(get_hdfs_creds)
-#     },
-#     dag=dag
-# )
-
-# oos_clean_task = PythonOperator(
-#     task_id='clean_oos_silver',
-#     python_callable=clean_oos,
-#     provide_context=True,
-#     op_kwargs={
-#         "bronze_path": DATA_PATH_OOS_BRONZE,
-#         "silver_path": DATA_PATH_OOS_SILVER,
-#         "creds": get_spark_creds,
-#         "hdfs_creds": get_hdfs_creds
-#     },
-#     dag=dag
-# )
 with dag:
     oos_extract_task = ExtractOOS2HDFSOperator(
           task_id='extract_oos_bronze'
@@ -70,7 +44,7 @@ with dag:
         , src_path=DATA_PATH_OOS_BRONZE
         , dst_path=DATA_PATH_OOS_SILVER
         , spark_master="local"
-        , spark_app_name="transform_app"
+        , spark_app_name="transform_oos_app"
     )
 
 oos_extract_task >> oos_transform_task
