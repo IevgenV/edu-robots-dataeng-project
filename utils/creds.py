@@ -12,7 +12,7 @@ class Credentials:
     CONN_GOLD_DB_ID = "gold_db_server"
 
     DEFAULT_HDFS_CREDS = {
-            'url': "http://127.0.0.1:50070"
+            'url': "127.0.0.1:50070"
           , 'user': "user"
     }
 
