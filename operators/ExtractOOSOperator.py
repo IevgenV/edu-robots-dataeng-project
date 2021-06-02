@@ -1,21 +1,18 @@
 import abc
 import logging
-import json
 import pathlib
 from datetime import date
 
-from airflow.hooks.base_hook import BaseHook
 from airflow.operators.bash_operator import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from hdfs import InsecureClient
 
+from ..utils.creds import Credentials
 from .oos.Cache import Cache
 from .oos.FileDailyCache import FileDailyCache
 from .oos.HDFSDailyCache import HDFSDailyCache
 from .oos.Server import DailyDataSource, ProdServer
 
-DEFAULT_HDFS_CONN_ID = "hdfs_server"
-DEFAULT_SERVER_NAME = "prod_server"
 DEFAULT_DATA_PATH = "~"
 DEFAULT_OOS_CONFIG = {
     "prod_server": {
@@ -36,34 +33,16 @@ DEFAULT_OOS_CONFIG = {
 }
 
 
-def __get_oos_creds(conn_id:str) -> dict:
-    conn_oos = BaseHook.get_connection(conn_id)
-    return {
-          conn_id : {
-              'address': conn_oos.host,
-              'login': conn_oos.login,
-              'password': conn_oos.password,
-              'apis': json.loads(conn_oos.extra)
-          }
-    }
-
-def __get_hdfs_creds(conn_id:str) -> dict:
-    conn_hdfs = BaseHook.get_connection(conn_id)
-    return {
-          'url': ":".join([conn_hdfs.host, str(conn_hdfs.port)]),
-          'user': conn_hdfs.login
-    }
-
-
 class ExtractOOSOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self
                , oos_config_path:pathlib.Path = None
-               , _data_directory:pathlib.Path = None
-               , oos_conn_id:str = DEFAULT_SERVER_NAME
+               , data_directory:pathlib.Path = None
+               , oos_conn_id:str = Credentials.DEFAULT_SERVER_NAME
                , *args, **kwargs):
-        self.__data_directory = _data_directory if _data_directory is not None else DEFAULT_DATA_PATH
+        self._data_directory = data_directory if data_directory is not None \
+                               else DEFAULT_DATA_PATH
         self._server_name = oos_conn_id
         self._oos_config = oos_config_path
         super().__init__(*args, **kwargs)
@@ -76,8 +55,12 @@ class ExtractOOSOperator(BaseOperator):
 
     def execute(self, context):
         cache_date = context.get("execution_date")
-        cache_date = date.today() if cache_date is None else cache_date.date()
-        config = self._oos_config if self._oos_config is not None else __get_oos_creds(self._server_name)
+        cache_date = date.today() if cache_date is None \
+                     else cache_date.date()
+
+        config = self._oos_config if self._oos_config is not None \
+                 else DEFAULT_OOS_CONFIG if self._server_name is None \
+                 else Credentials.get_oos_creds(self._server_name)
 
         logging.info("Parameters for OOS products loading are:")
         logging.info(f"Target data root path: {self._data_directory}")
@@ -116,7 +99,7 @@ class ExtractOOS2LocalFSOperator(ExtractOOSOperator):
 class ExtractOOS2HDFSOperator(ExtractOOSOperator):
 
     def __init__(self
-               , hdfs_conn_id:str = DEFAULT_HDFS_CONN_ID
+               , hdfs_conn_id:str = Credentials.DEFAULT_HDFS_CONN_ID
                , *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._hdfs_conn_id = hdfs_conn_id
@@ -124,7 +107,7 @@ class ExtractOOS2HDFSOperator(ExtractOOSOperator):
     def _get_cache_strategy(self
                           , data_source:DailyDataSource
                           , cache_date:date=None) -> Cache:
-        creds = __get_hdfs_creds(self._hdfs_conn_id)
+        creds = Credentials.get_hdfs_creds(self._hdfs_conn_id)
         logging.info(f"Create client and connect to HDFS at {creds['url']}...")
         hdfs_client = InsecureClient(**creds)
         logging.info(f"Client has been created.")

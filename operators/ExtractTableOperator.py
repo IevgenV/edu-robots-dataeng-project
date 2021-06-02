@@ -5,25 +5,17 @@ import pathlib
 from datetime import date
 from typing import Callable
 
-from airflow.hooks.base_hook import BaseHook
 from airflow.operators.bash_operator import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from hdfs.client import Client
 
 import psycopg2
 from hdfs import InsecureClient
-from sqlalchemy.sql.expression import false, true
-from sqlalchemy.sql.sqltypes import Date
 
-from .FileDailyCache import FileDailyCache
-from .HDFSDailyCache import HDFSDailyCache
-from .Cache import Cache
-from .Server import DailyDataSource, ProdServer
-
+from ..utils.creds import Credentials
 
 DEFAULT_DATA_PATH = "~"
-DEFAULT_DB_CONN_ID = "dshop_db_server"
-DEFAULT_HDFS_CONN_ID = "hdfs_server"
+
 DEFAULT_PGDB_CREDS = {
       'host': 'localhost'
     , 'port': '5432'
@@ -32,23 +24,6 @@ DEFAULT_PGDB_CREDS = {
     , 'password': ''
 }
 
-
-def __get_pg_creds(conn_id:str) -> dict:
-    conn_dshop = BaseHook.get_connection(conn_id)
-    return {
-          'host': conn_dshop.host
-        , 'port': conn_dshop.port
-        , 'database': "dshop"
-        , 'user': conn_dshop.login
-        , 'password': conn_dshop.password
-    }
-
-def __get_hdfs_creds(conn_id:str) -> dict:
-    conn_hdfs = BaseHook.get_connection(conn_id)
-    return {
-          'url': ":".join([conn_hdfs.host, str(conn_hdfs.port)]),
-          'user': conn_hdfs.login
-    }
 
 def __create_hdfs_path_if_not_exists(hdfs_client:Client
                                        , data_path:pathlib.Path) -> bool:
@@ -62,7 +37,7 @@ def __create_hdfs_path_if_not_exists(hdfs_client:Client
             except OSError:
                 logging.error(f"{data_path} directory tree can not be created.")
                 raise OSError("Can't create HDFS data directory: '{}'".format(data_path))
-        return false
+        return False
 
 
 class ExtractPGTableOperator(BaseOperator):
@@ -71,25 +46,28 @@ class ExtractPGTableOperator(BaseOperator):
     def __init__(self
                , table_name:str
                , data_directory:pathlib.Path = None
-               , db_conn_id:str = DEFAULT_DB_CONN_ID
+               , db_conn_id:str = Credentials.DEFAULT_DB_CONN_ID
                , *args, **kwargs):
         assert table_name, "`table_name` argument can't be specified as None"
         self._table_name = table_name
-        self._data_directory = data_directory if data_directory is not None else DEFAULT_DATA_PATH
+        self._data_directory = data_directory if data_directory is not None \
+                               else DEFAULT_DATA_PATH
         self._conn_id = db_conn_id
         super().__init__(*args, **kwargs)
 
     @abc.abstractmethod
-    def extract_table(self, pg_conn, extraction_date:Date):
+    def extract_table(self, pg_conn, extraction_date:date):
         pass
 
     def execute(self, context):
         logging.info("Parameters for table loading parsing started...")
-        db_creds = __get_pg_creds(self._conn_id)
+        db_creds = Credentials.get_pg_creds(self._conn_id)
         extraction_date = context.get("execution_date")
 
-        db_creds = db_creds if db_creds is not None else DEFAULT_PGDB_CREDS
-        extraction_date = date.today() if extraction_date is None else extraction_date.date()
+        db_creds = db_creds if db_creds is not None \
+                   else DEFAULT_PGDB_CREDS
+        extraction_date = date.today() if extraction_date is None \
+                          else extraction_date.date()
 
         logging.info("Parameters for table loading were parsed:")
         logging.info(f"Target data root path: {self._data_directory}")
@@ -107,13 +85,13 @@ class ExtractPGTableOperator(BaseOperator):
 class ExtractPGTable2HDFSOperator(ExtractPGTableOperator):
 
     def __init__(self
-               , hdfs_conn_id:str = DEFAULT_HDFS_CONN_ID
+               , hdfs_conn_id:str = Credentials.DEFAULT_HDFS_CONN_ID
                , *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._hdfs_conn_id = hdfs_conn_id
 
-    def extract_table(self, pg_conn, extraction_date:Date):
-        hdfs_creds = __get_hdfs_creds(self._conn_id)
+    def extract_table(self, pg_conn, extraction_date:date):
+        hdfs_creds = Credentials.get_hdfs_creds(self._conn_id)
 
         logging.info(f"Create client and connect to HDFS at {hdfs_creds['url']}...")
         hdfs_client = InsecureClient(**hdfs_creds)
