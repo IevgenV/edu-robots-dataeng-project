@@ -8,6 +8,7 @@ class Credentials:
     DEFAULT_DB_CONN_ID = "dshop_db_server"
     DEFAULT_HDFS_CONN_ID = "hdfs_server"
     DEFAULT_SERVER_NAME = "prod_server"
+    CONN_SPARK_ID = "spark_server"
 
     @staticmethod
     def get_oos_creds(conn_id:str) -> dict:
@@ -38,4 +39,11 @@ class Credentials:
             , 'database': "dshop"
             , 'user': conn_dshop.login
             , 'password': conn_dshop.password
+        }
+
+    @staticmethod
+    def get_spark_creds() -> dict:
+        conn_spark = BaseHook.get_connection(CONN_SPARK_ID)
+        return {
+            'master': conn_spark.host
         }
