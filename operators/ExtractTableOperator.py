@@ -9,8 +9,8 @@ from airflow.operators.bash_operator import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from hdfs import InsecureClient
 
-from ..utils.creds import Credentials
-from ..utils.hdfs import HDFSDefaults, create_hdfs_path_if_not_exists
+from utils.creds import Credentials
+from utils.hdfs import HDFSDefaults, create_hdfs_path_if_not_exists
 
 
 class ExtractPGTableOperator(BaseOperator):

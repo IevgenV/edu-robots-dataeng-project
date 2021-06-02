@@ -11,8 +11,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.dataframe import DataFrame
 from utils.creds import Credentials
 from utils.hdfs import HDFSDefaults, create_hdfs_path_if_not_exists
-
-from ..utils.spark import SparkDefaults, open_file_as_df
+from utils.spark import SparkDefaults, open_file_as_df
 
 
 class TransformSparkOperator(BaseOperator):
@@ -68,7 +67,7 @@ class TransformSparkOperator(BaseOperator):
 
     def execute(self, context):
         logging.info(f"Read source (bronze) data from `{self.src_path}`...")
-        df = open_file_as_df(self.src_path)
+        df = open_file_as_df(self.spark, self.src_path)
         records_cnt = df.count()
         logging.info(f"`{self.src_path}` has been opened."
                      f" DataFrame contains {records_cnt} records.")
@@ -120,11 +119,14 @@ class TransformSparkHDFSOperator(TransformSparkOperator):
 
 
 class TransformSparkHDFSDailyOperator(TransformSparkHDFSOperator):
-    
+
     def execute(self, context):
         execution_date = context.get("execution_date")
         execution_date = date.today() if execution_date is None \
                          else execution_date.date()
-        self.src_path = self.src_path / pathlib.Path(execution_date.isoformat())
-        self.dst_path = self.dst_path / pathlib.Path(execution_date.isoformat())
+        date_dir = pathlib.Path(execution_date.isoformat())
+        src_date_file = pathlib.Path(".".join([execution_date.isoformat(), "json"]))
+        dst_date_file = pathlib.Path(".".join([execution_date.isoformat(), "parquet"]))
+        self.src_path = self.src_path / date_dir / src_date_file
+        self.dst_path = self.dst_path / date_dir / dst_date_file
         super().execute(context)

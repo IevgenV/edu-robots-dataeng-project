@@ -8,12 +8,12 @@ from airflow.operators.bash_operator import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from hdfs import InsecureClient
 
-from ..utils.creds import Credentials
-from ..utils.hdfs import HDFSDefaults
-from .oos.Cache import Cache
-from .oos.FileDailyCache import FileDailyCache
-from .oos.HDFSDailyCache import HDFSDailyCache
-from .oos.Server import DailyDataSource, ProdServer
+from utils.creds import Credentials
+from utils.hdfs import HDFSDefaults
+from utils.oos.Cache import Cache
+from utils.oos.FileDailyCache import FileDailyCache
+from utils.oos.HDFSDailyCache import HDFSDailyCache
+from utils.oos.Server import DailyDataSource, ProdServer
 
 
 class ExtractOOSOperator(BaseOperator):
