@@ -14,8 +14,6 @@ DATA_PATH_OOS_BRONZE = pathlib.Path("/bronze/oos")
 # Path to the directory where the out-of-stock data has to be stored/cached in parquet
 DATA_PATH_OOS_SILVER = pathlib.Path("/silver/oos")
 
-PG_TABLE_NAMES = ["aisles", "clients", "departments", "orders", "products"]
-
 DEFAULT_ARGS = {
       'owner': 'airflow'
     , 'email': ['airflow@airflow.com']
@@ -24,7 +22,7 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='dshop_dag_0_0_1'
+      dag_id='dshop_dag_0_0_2'
     , description='Load data from `dshop` database to Bronze, clear and verify then put into the Silver. After all, load data to Gold Greenplum database.'
     , schedule_interval='@daily'
     , start_date=datetime(2021, 1, 1, 5)  # <- load data each morning at 5 a.m.
@@ -64,12 +62,15 @@ with dag:
         transform_task = TransformTableOperator(
               task_id=f"transform_dshop_bronze_{table_name}"
             , provide_context=True
+            , src_file_ext="csv"
+            , dst_file_ext="parquet"
             , hdfs_conn_id=Credentials.DEFAULT_HDFS_CONN_ID
             , src_path=DATA_PATH_OOS_BRONZE
             , dst_path=DATA_PATH_OOS_SILVER
             , spark_master="local"
             , spark_app_name="transform_dshop_app"
         )
+        transform_tasks.append(transform_task)
 
 for extract_task, transform_task in zip(extract_tasks, transform_tasks):
     extract_task >> wait_extract_task >> transform_task

@@ -21,7 +21,7 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='oos_dag_0_0_1'
+      dag_id='oos_dag_0_0_2'
     , description='Load OOS Data from remote API to HDFS Bronze, clear and verify, then put into the Silver.'
     , schedule_interval='@daily'
     , start_date=datetime(2021, 1, 1, 23)  # <- load data each evening at 11 p.m.
@@ -40,6 +40,8 @@ with dag:
     oos_transform_task = TransformOOSOperator(
           task_id='transform_oos_silver'
         , provide_context=True
+        , src_file_ext="json"
+        , dst_file_ext="parquet"
         , hdfs_conn_id=Credentials.DEFAULT_HDFS_CONN_ID
         , src_path=DATA_PATH_OOS_BRONZE
         , dst_path=DATA_PATH_OOS_SILVER
