@@ -22,7 +22,7 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='dshop_dag_0_0_2'
+      dag_id='dshop_dag_0_0_3'
     , description='Load data from `dshop` database to Bronze, clear and verify then put into the Silver. After all, load data to Gold Greenplum database.'
     , schedule_interval='@daily'
     , start_date=datetime(2021, 1, 1, 5)  # <- load data each morning at 5 a.m.
@@ -30,7 +30,8 @@ dag = DAG(
 )
 
 table_names = [
-      "ordersproducts"
+      "orders"
+    , "products"
     , "departments"
     , "aisles"
     , "clients"
