@@ -65,7 +65,7 @@ class ExtractPGTable2HDFSOperator(ExtractPGTableOperator):
 
     def extract_table(self, pg_conn, extraction_date:date):
         hdfs_creds = Credentials.DEFAULT_HDFS_CREDS if self._hdfs_conn_id is None \
-                     else Credentials.get_hdfs_creds(self._conn_id)
+                     else Credentials.get_hdfs_creds(self._hdfs_conn_id)
 
         logging.info(f"Create client and connect to HDFS at {hdfs_creds['url']}...")
         hdfs_client = InsecureClient(**hdfs_creds)
