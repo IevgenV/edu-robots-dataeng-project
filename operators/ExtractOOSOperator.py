@@ -2,36 +2,18 @@ import abc
 import logging
 import pathlib
 from datetime import date
+from utils.hdfs import HDFSDefaults
 
 from airflow.operators.bash_operator import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from hdfs import InsecureClient
 
 from ..utils.creds import Credentials
+from ..utils.hdfs import HDFSDefaults
 from .oos.Cache import Cache
 from .oos.FileDailyCache import FileDailyCache
 from .oos.HDFSDailyCache import HDFSDailyCache
 from .oos.Server import DailyDataSource, ProdServer
-
-DEFAULT_DATA_PATH = "~"
-
-DEFAULT_OOS_CONFIG = {
-    "prod_server": {
-        "address": "https://robot-dreams-de-api.herokuapp.com",
-        "login": "rd_dreams",
-        "password": "djT6LasE",
-        "apis": {
-            "authorize": {
-               "endpoint": "/auth",
-               "method": "POST"
-            },
-            "out_of_stock": {
-                "endpoint": "/out_of_stock",
-                "method": "GET"
-            }
-        }
-    }
-}
 
 
 class ExtractOOSOperator(BaseOperator):
@@ -43,7 +25,7 @@ class ExtractOOSOperator(BaseOperator):
                , oos_conn_id:str = Credentials.DEFAULT_SERVER_NAME
                , *args, **kwargs):
         self._data_directory = data_directory if data_directory is not None \
-                               else DEFAULT_DATA_PATH
+                               else HDFSDefaults.DEFAULT_BRONZE_PATH
         self._server_name = oos_conn_id
         self._oos_config = oos_config_path
         super().__init__(*args, **kwargs)
@@ -60,7 +42,7 @@ class ExtractOOSOperator(BaseOperator):
                      else cache_date.date()
 
         config = self._oos_config if self._oos_config is not None \
-                 else DEFAULT_OOS_CONFIG if self._server_name is None \
+                 else Credentials.DEFAULT_OOS_CONFIG if self._server_name is None \
                  else Credentials.get_oos_creds(self._server_name)
 
         logging.info("Parameters for OOS products loading are:")
@@ -108,9 +90,10 @@ class ExtractOOS2HDFSOperator(ExtractOOSOperator):
     def _get_cache_strategy(self
                           , data_source:DailyDataSource
                           , cache_date:date=None) -> Cache:
-        creds = Credentials.get_hdfs_creds(self._hdfs_conn_id)
-        logging.info(f"Create client and connect to HDFS at {creds['url']}...")
-        hdfs_client = InsecureClient(**creds)
+        hdfs_creds = Credentials.DEFAULT_HDFS_CREDS if self._hdfs_conn_id is None \
+                else Credentials.get_hdfs_creds(self._hdfs_conn_id)
+        logging.info(f"Create client and connect to HDFS at {hdfs_creds['url']}...")
+        hdfs_client = InsecureClient(**hdfs_creds)
         logging.info(f"Client has been created.")
         logging.info(f"Creating HDFS cache to store OOS data...")
         cache = HDFSDailyCache(hdfs_client, self._data_directory, data_source, cache_date)

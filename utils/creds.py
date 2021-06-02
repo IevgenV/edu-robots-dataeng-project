@@ -11,6 +11,37 @@ class Credentials:
     CONN_SPARK_ID = "spark_server"
     CONN_GOLD_DB_ID = "gold_db_server"
 
+    DEFAULT_HDFS_CREDS = {
+            'url': "http://127.0.0.1:50070"
+          , 'user': "user"
+    }
+
+    DEFAULT_PGDB_CREDS = {
+          'host': 'localhost'
+        , 'port': '5432'
+        , 'database': 'dshop'
+        , 'user': 'pguser'
+        , 'password': ''
+    }
+
+    DEFAULT_OOS_CONFIG = {
+        "prod_server": {
+            "address": "https://robot-dreams-de-api.herokuapp.com",
+            "login": "rd_dreams",
+            "password": "djT6LasE",
+            "apis": {
+                "authorize": {
+                "endpoint": "/auth",
+                "method": "POST"
+                },
+                "out_of_stock": {
+                    "endpoint": "/out_of_stock",
+                    "method": "GET"
+                }
+            }
+        }
+    }
+
     @staticmethod
     def get_oos_creds(conn_id:str) -> dict:
         conn_oos = BaseHook.get_connection(conn_id)

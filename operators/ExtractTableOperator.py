@@ -10,17 +10,7 @@ from airflow.utils.decorators import apply_defaults
 from hdfs import InsecureClient
 
 from ..utils.creds import Credentials
-from ..utils.hdfs import create_hdfs_path_if_not_exists
-
-DEFAULT_DATA_PATH = "~"
-
-DEFAULT_PGDB_CREDS = {
-      'host': 'localhost'
-    , 'port': '5432'
-    , 'database': 'dshop'
-    , 'user': 'pguser'
-    , 'password': ''
-}
+from ..utils.hdfs import HDFSDefaults, create_hdfs_path_if_not_exists
 
 
 class ExtractPGTableOperator(BaseOperator):
@@ -34,7 +24,7 @@ class ExtractPGTableOperator(BaseOperator):
         assert table_name, "`table_name` argument can't be specified as None"
         self._table_name = table_name
         self._data_directory = data_directory if data_directory is not None \
-                               else DEFAULT_DATA_PATH
+                               else HDFSDefaults.DEFAULT_BRONZE_PATH
         self._conn_id = db_conn_id
         super().__init__(*args, **kwargs)
 
@@ -48,7 +38,7 @@ class ExtractPGTableOperator(BaseOperator):
         extraction_date = context.get("execution_date")
 
         db_creds = db_creds if db_creds is not None \
-                   else DEFAULT_PGDB_CREDS
+                   else Credentials.DEFAULT_PGDB_CREDS
         extraction_date = date.today() if extraction_date is None \
                           else extraction_date.date()
 
@@ -74,7 +64,8 @@ class ExtractPGTable2HDFSOperator(ExtractPGTableOperator):
         self._hdfs_conn_id = hdfs_conn_id
 
     def extract_table(self, pg_conn, extraction_date:date):
-        hdfs_creds = Credentials.get_hdfs_creds(self._conn_id)
+        hdfs_creds = Credentials.DEFAULT_HDFS_CREDS if self._hdfs_conn_id is None \
+                     else Credentials.get_hdfs_creds(self._conn_id)
 
         logging.info(f"Create client and connect to HDFS at {hdfs_creds['url']}...")
         hdfs_client = InsecureClient(**hdfs_creds)
