@@ -1,5 +1,3 @@
--- Table: city
-
 --
 -- Create table `clients`
 --
@@ -49,7 +47,7 @@ CREATE TABLE public.products (
 CREATE TABLE public.stores (
     store_id integer NOT NULL,
     location_area_id smallint,
-    store_type varying(64)
+    store_type character varying(64)
 );
 
 --
