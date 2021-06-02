@@ -65,6 +65,8 @@ with dag:
             , provide_context=True
             , src_file_ext="csv"
             , dst_file_ext="parquet"
+            , src_file_name=table_name
+            , dst_file_name=table_name
             , hdfs_conn_id=Credentials.DEFAULT_HDFS_CONN_ID
             , src_path=DATA_PATH_OOS_BRONZE
             , dst_path=DATA_PATH_OOS_SILVER

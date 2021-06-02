@@ -83,8 +83,12 @@ class TransformSparkHDFSDailyOperator(TransformSparkHDFSOperator):
     def __init__(self
                , src_file_ext:str = "json"
                , dst_file_ext:str = "parquet"
+               , src_file_name:str = None
+               , dst_file_name:str = None
                , *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.src_file_name = src_file_name
+        self.dst_file_name = dst_file_name
         self.src_file_ext = src_file_ext
         self.dst_file_ext = dst_file_ext
 
@@ -93,8 +97,12 @@ class TransformSparkHDFSDailyOperator(TransformSparkHDFSOperator):
         execution_date = date.today() if execution_date is None \
                          else execution_date.date()
         date_dir = pathlib.Path(execution_date.isoformat())
-        src_date_file = pathlib.Path(".".join([execution_date.isoformat(), self.src_file_ext]))
-        dst_date_file = pathlib.Path(".".join([execution_date.isoformat(), self.dst_file_ext]))
+        src_file_name = self.src_file_name if self.src_file_name is not None \
+                        else execution_date.isoformat()
+        dst_file_name = self.dst_file_name if self.dst_file_name is not None \
+                        else execution_date.isoformat()
+        src_date_file = pathlib.Path(".".join([src_file_name, self.src_file_ext]))
+        dst_date_file = pathlib.Path(".".join([dst_file_name, self.dst_file_ext]))
         self.src_path = self.src_path / date_dir / src_date_file
         self.dst_path = self.dst_path / date_dir / dst_date_file
         super().execute(context)
