@@ -14,6 +14,7 @@ from .oos.HDFSDailyCache import HDFSDailyCache
 from .oos.Server import DailyDataSource, ProdServer
 
 DEFAULT_DATA_PATH = "~"
+
 DEFAULT_OOS_CONFIG = {
     "prod_server": {
         "address": "https://robot-dreams-de-api.herokuapp.com",

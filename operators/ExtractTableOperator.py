@@ -3,16 +3,14 @@ import logging
 import os
 import pathlib
 from datetime import date
-from typing import Callable
-
-from airflow.operators.bash_operator import BaseOperator
-from airflow.utils.decorators import apply_defaults
-from hdfs.client import Client
 
 import psycopg2
+from airflow.operators.bash_operator import BaseOperator
+from airflow.utils.decorators import apply_defaults
 from hdfs import InsecureClient
 
 from ..utils.creds import Credentials
+from ..utils.hdfs import create_hdfs_path_if_not_exists
 
 DEFAULT_DATA_PATH = "~"
 
@@ -23,21 +21,6 @@ DEFAULT_PGDB_CREDS = {
     , 'user': 'pguser'
     , 'password': ''
 }
-
-
-def __create_hdfs_path_if_not_exists(hdfs_client:Client
-                                       , data_path:pathlib.Path) -> bool:
-        assert hdfs_client is not None, "HDFS Client can't be None"
-        if hdfs_client.status(data_path, strict=False) is None:
-            try:
-                logging.info(f"{data_path} directory doesn't exist. Creating directory tree...")
-                hdfs_client.makedirs(data_path)
-                logging.info(f"{data_path} directory tree has been created.")
-                return true
-            except OSError:
-                logging.error(f"{data_path} directory tree can not be created.")
-                raise OSError("Can't create HDFS data directory: '{}'".format(data_path))
-        return False
 
 
 class ExtractPGTableOperator(BaseOperator):
@@ -99,7 +82,7 @@ class ExtractPGTable2HDFSOperator(ExtractPGTableOperator):
 
         data_path = self._data_directory / pathlib.Path(extraction_date.isoformat())
         logging.info(f"Check if target directory `{data_path}` exists at HDFS and create it if doesn't.")
-        __create_hdfs_path_if_not_exists(hdfs_client, data_path)
+        create_hdfs_path_if_not_exists(hdfs_client, data_path)
 
         logging.info(f"Extracting table `{self._table_name}` to HDFS: {data_path}...")
         hdfs_fname = os.path.join(data_path, f"{self._table_name}.csv")
