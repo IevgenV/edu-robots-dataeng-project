@@ -77,13 +77,16 @@ class LoadDShopOperator(LoadOperator):
         store_types_tbl_df = open_file_as_df(self.spark, src_path / pathlib.Path("store_types.parquet"))
         location_areas_tbl_df = open_file_as_df(self.spark, src_path / pathlib.Path("location_areas.parquet"))
 
+        aisles_tbl_df = aisles_tbl_df.withColumnRenamed("_c0", "aisle_id") \
+                                     .withColumnRenamed("_c1", "aisle")
+
         logging.info("Load data to `products` table at Gold layer...")
         gold_products_df = products_tbl_df \
             .join(aisles_tbl_df, on="aisle_id") \
             .join(departments_tbl_df, on="department_id") \
             .select(products_tbl_df.product_id
                   , products_tbl_df.product_name
-                  , departments_tbl_df.department_name
+                  , departments_tbl_df.department
                   , aisles_tbl_df.aisle)
         self._merge2db(gold_products_df, "public.products", "aisle_id")
         logging.info("Load data to `products` table at Gold layer done.")
@@ -95,7 +98,7 @@ class LoadDShopOperator(LoadOperator):
 
         logging.info("Load data to `clients` table at Gold layer...")
         gold_clients_df = clients_tbl_df \
-            .select(clients_tbl_df.id.alias("client_id")
+            .select(clients_tbl_df.client_id.alias("client_id")
                   , clients_tbl_df.fullname
                   , clients_tbl_df.location_area_id)
         self._merge2db(gold_clients_df, "public.clients", "client_id")
@@ -106,7 +109,7 @@ class LoadDShopOperator(LoadOperator):
             .join(store_types_tbl_df, on="store_type_id") \
             .select(stores_tbl_df.store_id
                   , stores_tbl_df.location_area_id
-                  , store_types_tbl_df.type.alias("store_id"))
+                  , store_types_tbl_df.type.alias("store_type"))
         self._merge2db(gold_stores_df, "public.stores", "client_id")
         logging.info("Load data to `stores` table at Gold layer done.")
 
