@@ -132,18 +132,18 @@ class LoadOOSOperator(LoadOperator):
 
         logging.info("Load data to `dates` table at Gold layer...")
         gold_dates_df = oos_src_df \
-            .sort(oos_src_df.order_date) \
-            .select(oos_src_df.order_date
-                  , F.weekofyear(oos_src_df.order_date).alias('date_week')
-                  , F.month(oos_src_df.order_date).alias('date_month')
-                  , F.year(oos_src_df.order_date).alias('date_year')
-                  , F.dayofweek(oos_src_df.order_date).alias('date_weekday'))
+            .sort(oos_src_df.date) \
+            .select(oos_src_df.date
+                  , F.weekofyear(oos_src_df.date).alias('date_week')
+                  , F.month(oos_src_df.date).alias('date_month')
+                  , F.year(oos_src_df.date).alias('date_year')
+                  , F.dayofweek(oos_src_df.date).alias('date_weekday'))
         gold_dates_df = gold_dates_df.dropDuplicates()
         gold_dates_df.write.jdbc(conn_url, "dates", mode="ignore", properties=conn_creds)
 
         logging.info("Load data to `out_of_stock` table at Gold layer...")
         gold_oos_df = oos_src_df \
-            .select(oos_src_df.product_id, oos_src_df.order_date) \
+            .select(oos_src_df.product_id, oos_src_df.date) \
             .withColumn('store_id', F.lit(None).cast(IntegerType()))
         
         gold_oos_df.write.jdbc(conn_url, "out_of_stock", mode="append", properties=conn_creds)
