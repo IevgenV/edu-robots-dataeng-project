@@ -52,5 +52,6 @@ class SparkOperator(BaseOperator):
     def spark_create(self, spark_master, spark_app_name):
         return SparkSession.builder \
                            .master(spark_master) \
+                           .config("spark.driver.extraClassPath", SparkDefaults.DEFAULT_SPARK_JDBC_DRIVER_PATH) \
                            .appName(spark_app_name) \
                            .getOrCreate()
