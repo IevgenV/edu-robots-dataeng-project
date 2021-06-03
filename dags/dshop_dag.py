@@ -11,10 +11,10 @@ from utils.creds import Credentials
 
 
 # Path to the directory where the out-of-stock data has to be stored/cached in json
-DATA_PATH_OOS_BRONZE = pathlib.Path("/bronze/oos")
+DATA_PATH_OOS_BRONZE = pathlib.Path("/bronze/dshop")
 
 # Path to the directory where the out-of-stock data has to be stored/cached in parquet
-DATA_PATH_OOS_SILVER = pathlib.Path("/silver/oos")
+DATA_PATH_OOS_SILVER = pathlib.Path("/silver/dshop")
 
 DEFAULT_ARGS = {
       'owner': 'airflow'
@@ -24,7 +24,7 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='dshop_dag_0_0_4'
+      dag_id='dshop_dag_0_0_5'
     , description='Load data from `dshop` database to Bronze, clear and verify then put into the Silver. After all, load data to Gold Greenplum database.'
     , schedule_interval='@daily'
     , start_date=datetime(2021, 6, 2, 5)  # <- load data each morning at 5 a.m.
@@ -77,7 +77,7 @@ with dag:
             , provide_context=True
             , dst_db_conn_id = Credentials.DEFAULT_CONN_GOLD_DB_ID
             , jdbc_driver_path = SparkDefaults.DEFAULT_SPARK_JDBC_DRIVER_PATH
-            , src_path=DATA_PATH_OOS_BRONZE
+            , src_path=DATA_PATH_OOS_SILVER
             , spark_master="local"
             , spark_app_name="dshop_app"
     )
