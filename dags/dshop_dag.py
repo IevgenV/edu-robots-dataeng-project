@@ -1,3 +1,5 @@
+from utils.spark import SparkDefaults
+from operators.LoadOperator import LoadDShopOperator
 import pathlib
 from datetime import datetime
 
@@ -22,33 +24,20 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='dshop_dag_0_0_3'
+      dag_id='dshop_dag_0_0_4'
     , description='Load data from `dshop` database to Bronze, clear and verify then put into the Silver. After all, load data to Gold Greenplum database.'
     , schedule_interval='@daily'
-    , start_date=datetime(2021, 1, 1, 5)  # <- load data each morning at 5 a.m.
+    , start_date=datetime(2021, 6, 2, 5)  # <- load data each morning at 5 a.m.
     , default_args=DEFAULT_ARGS
 )
 
-table_names = [
-      "orders"
-    , "products"
-    , "departments"
-    , "aisles"
-    , "clients"
-    , "stores"
-    , "store_types"
-    , "location_areas"
-]
 extract_tasks = []
 transform_tasks = []
-load_tasks = []
-
+table_names = [
+      "orders",  "products", "departments", "aisles"
+    , "clients", "stores",   "store_types", "location_areas"
+]
 with dag:
-    wait_extract_task = DummyOperator(
-          task_id="wait_dshop_extraction_step"
-        , dag=dag
-    )
-
     for table_name in table_names:
         extract_task = ExtractPGTable2HDFSOperator(
               task_id=f"extract_dshop_bronze_{table_name}"
@@ -61,7 +50,7 @@ with dag:
         extract_tasks.append(extract_task)
 
         transform_task = TransformTableOperator(
-              task_id=f"transform_dshop_bronze_{table_name}"
+              task_id=f"transform_dshop_silver_{table_name}"
             , provide_context=True
             , src_file_ext="csv"
             , dst_file_ext="parquet"
@@ -71,9 +60,27 @@ with dag:
             , src_path=DATA_PATH_OOS_BRONZE
             , dst_path=DATA_PATH_OOS_SILVER
             , spark_master="local"
-            , spark_app_name="transform_dshop_app"
+            , spark_app_name="dshop_app"
         )
         transform_tasks.append(transform_task)
 
+    wait_extract_task = DummyOperator(
+          task_id="wait_dshop_extraction_step"
+    )
+
+    wait_transform_task = DummyOperator(
+          task_id="wait_dshop_transform_step"
+    )
+
+    load_task = LoadDShopOperator(
+              task_id="load_dshop_gold"
+            , provide_context=True
+            , dst_db_conn_id = Credentials.DEFAULT_CONN_GOLD_DB_ID
+            , jdbc_driver_path = SparkDefaults.DEFAULT_SPARK_JDBC_DRIVER_PATH
+            , src_path=DATA_PATH_OOS_BRONZE
+            , spark_master="local"
+            , spark_app_name="dshop_app"
+    )
+
 for extract_task, transform_task in zip(extract_tasks, transform_tasks):
-    extract_task >> wait_extract_task >> transform_task
+    extract_task >> wait_extract_task >> transform_task >> wait_transform_task >> load_task
