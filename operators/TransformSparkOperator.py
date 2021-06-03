@@ -87,22 +87,22 @@ class TransformSparkHDFSDailyOperator(TransformSparkHDFSOperator):
                , dst_file_name:str = None
                , *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.src_file_name = src_file_name
-        self.dst_file_name = dst_file_name
-        self.src_file_ext = src_file_ext
-        self.dst_file_ext = dst_file_ext
+        self._src_file_name = src_file_name
+        self._dst_file_name = dst_file_name
+        self._src_file_ext = src_file_ext
+        self._dst_file_ext = dst_file_ext
 
     def execute(self, context):
         execution_date = context.get("execution_date")
         execution_date = date.today() if execution_date is None \
                          else execution_date.date()
         date_dir = pathlib.Path(execution_date.isoformat())
-        src_file_name = self.src_file_name if self.src_file_name is not None \
+        src_file_name = self._src_file_name if self._src_file_name is not None \
                         else execution_date.isoformat()
-        dst_file_name = self.dst_file_name if self.dst_file_name is not None \
+        dst_file_name = self._dst_file_name if self._dst_file_name is not None \
                         else execution_date.isoformat()
-        src_date_file = pathlib.Path(".".join([src_file_name, self.src_file_ext]))
-        dst_date_file = pathlib.Path(".".join([dst_file_name, self.dst_file_ext]))
-        self.src_path = self.src_path / date_dir / src_date_file
-        self.dst_path = self.dst_path / date_dir / dst_date_file
+        src_file = pathlib.Path(".".join([src_file_name, self._src_file_ext]))
+        dst_file = pathlib.Path(".".join([dst_file_name, self._dst_file_ext]))
+        self.src_path = self.src_path / date_dir / src_file
+        self.dst_path = self.dst_path / date_dir / dst_file
         super().execute(context)
