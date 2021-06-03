@@ -127,7 +127,7 @@ class LoadOOSOperator(LoadOperator):
 
     def load_data(self, src_path:pathlib.Path, conn_url:str, conn_creds:dict) -> bool:
         logging.info("Load silver data to DataFrames...")
-        src_file_name = ".".join(self.load_date.isoformat(), "json")
+        src_file_name = ".".join([self.load_date.isoformat(), "parquet"])
         oos_src_df = open_file_as_df(self.spark, src_path / pathlib.Path(src_file_name))
 
         logging.info("Load data to `dates` table at Gold layer...")

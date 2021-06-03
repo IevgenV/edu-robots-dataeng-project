@@ -9,7 +9,7 @@ class SparkDefaults:
     DEFAULT_SPARK_MASTER = "local"
     DEFAULT_SPARK_JDBC_DRIVER_PATH = "/opt/spark/drivers/postgresql-42.2.20.jar"
     SUPPORTED_DST_FORMATS = ["parquet"]
-    SUPPORTED_SRC_FORMATS = ["json", "csv"]
+    SUPPORTED_SRC_FORMATS = ["json", "csv", "parquet"]
 
 def open_file_as_df(spark:SparkSession, fpath:pathlib.Path) -> DataFrame:
     # NOTE(i.vagin): # Format is based on file extension:
