@@ -3,7 +3,7 @@ import logging
 import pathlib
 from datetime import date
 
-from pyspark.sql.types import IntegerType
+from pyspark.sql.types import DateType, IntegerType
 from utils.spark import SparkDefaults, open_file_as_df
 
 import pyspark.sql.functions as F
@@ -37,7 +37,7 @@ class LoadOperator(SparkOperator):
         pass
 
     def execute(self, context):
-        db_creds = Credentials.get_pg_creds(self._dst_db_conn_id)
+        db_creds = Credentials.get_gold_creds(self._dst_db_conn_id)
         load_date = context.get("execution_date")
 
         db_creds = db_creds if db_creds is not None \
@@ -48,11 +48,15 @@ class LoadOperator(SparkOperator):
         date_dir = pathlib.Path(self.load_date.isoformat())
         src_path = self.src_path / date_dir
 
-        logging.info("Parameters for data load stafge were parsed:")
+        logging.info("Parameters for data load stage were parsed:")
         logging.info(f"Source data directory: {src_path}")
 
         conn_url = f"jdbc:postgresql://{db_creds['host']}:{db_creds['port']}/{db_creds['database']}"
-        conn_creds = {"user": db_creds["user"], "password": db_creds["password"]}
+        conn_creds = {
+            "user": db_creds["user"]
+          , "password": db_creds["password"]
+          , "driver": "org.postgresql.Driver"
+        }
 
         self.load_data(src_path, conn_url, conn_creds)
 
@@ -71,6 +75,14 @@ class LoadDShopOperator(LoadOperator):
         location_areas_tbl_df = open_file_as_df(self.spark, src_path / pathlib.Path("location_areas.parquet"))
 
         logging.info("Load data to `products` table at Gold layer...")
+        logging.info(f"`products` schema: {products_tbl_df.schema}")
+        logging.info(f"`products` schema: {aisles_tbl_df.schema}")
+        logging.info(f"`departments` schema: {departments_tbl_df.schema}")
+        logging.info(f"`orders` schema: {orders_tbl_df.schema}")
+        logging.info(f"`clients` schema: {clients_tbl_df.schema}")
+        logging.info(f"`stores` schema: {stores_tbl_df.schema}")
+        logging.info(f"`store_types` schema: {store_types_tbl_df.schema}")
+        logging.info(f"`location_areas` schema: {location_areas_tbl_df.schema}")
         gold_products_df = products_tbl_df \
             .join(aisles_tbl_df, on="aisle_id") \
             .join(departments_tbl_df, on="department_id") \
@@ -79,10 +91,11 @@ class LoadDShopOperator(LoadOperator):
                   , departments_tbl_df.department_name
                   , aisles_tbl_df.aisle)
 
-        gold_products_df.write.jdbc(conn_url, "products", mode="overwrite", properties=conn_creds)
+        gold_products_df.write.jdbc(conn_url, "public.products", mode="overwrite", properties=conn_creds)
 
         logging.info("Load data to `location_areas` table at Gold layer...")
-        location_areas_tbl_df.write.jdbc(conn_url, "location_areas", mode="overwrite", properties=conn_creds)
+        logging.info(f"`products` schema: {location_areas_tbl_df.schema}")
+        location_areas_tbl_df.write.jdbc(conn_url, "public.location_areas", mode="overwrite", properties=conn_creds)
 
         logging.info("Load data to `clients` table at Gold layer...")
         gold_clients_df = clients_tbl_df \
@@ -90,7 +103,7 @@ class LoadDShopOperator(LoadOperator):
                   , clients_tbl_df.fullname
                   , clients_tbl_df.location_area_id)
 
-        gold_clients_df.write.jdbc(conn_url, "clients", mode="overwrite", properties=conn_creds)
+        gold_clients_df.write.jdbc(conn_url, "public.clients", mode="overwrite", properties=conn_creds)
 
         logging.info("Load data to `stores` table at Gold layer...")
         gold_stores_df = stores_tbl_df \
@@ -99,7 +112,7 @@ class LoadDShopOperator(LoadOperator):
                   , stores_tbl_df.location_area_id
                   , store_types_tbl_df.type.alias("store_type"))
 
-        gold_stores_df.write.jdbc(conn_url, "stores", mode="overwrite", properties=conn_creds)
+        gold_stores_df.write.jdbc(conn_url, "public.stores", mode="overwrite", properties=conn_creds)
 
         logging.info("Load data to `dates` table at Gold layer...")
         gold_dates_df = orders_tbl_df \
@@ -110,7 +123,7 @@ class LoadDShopOperator(LoadOperator):
                   , F.year(orders_tbl_df.order_date).alias('date_year')
                   , F.dayofweek(orders_tbl_df.order_date).alias('date_weekday'))
 
-        gold_dates_df.write.jdbc(conn_url, "dates", mode="ignore", properties=conn_creds)
+        gold_dates_df.write.jdbc(conn_url, "public.dates", mode="ignore", properties=conn_creds)
 
         logging.info("Load data to `orders` table at Gold layer...")
         gold_orders_df = orders_tbl_df \
@@ -120,7 +133,7 @@ class LoadDShopOperator(LoadOperator):
                   , orders_tbl_df.store_id
                   , orders_tbl_df.quantity)
 
-        gold_orders_df.write.jdbc(conn_url, "orders", mode="overwrite", properties=conn_creds)
+        gold_orders_df.write.jdbc(conn_url, "public.orders", mode="overwrite", properties=conn_creds)
 
 
 class LoadOOSOperator(LoadOperator):
@@ -133,17 +146,22 @@ class LoadOOSOperator(LoadOperator):
         logging.info("Load data to `dates` table at Gold layer...")
         gold_dates_df = oos_src_df \
             .sort(oos_src_df.date) \
-            .select(oos_src_df.date
+            .select(oos_src_df.date.cast(DateType()).alias("order_date")
                   , F.weekofyear(oos_src_df.date).alias('date_week')
                   , F.month(oos_src_df.date).alias('date_month')
                   , F.year(oos_src_df.date).alias('date_year')
                   , F.dayofweek(oos_src_df.date).alias('date_weekday'))
-        gold_dates_df = gold_dates_df.dropDuplicates()
-        gold_dates_df.write.jdbc(conn_url, "dates", mode="ignore", properties=conn_creds)
+        old_gold_dates_df = self.spark.read.jdbc(conn_url, "public.dates", properties=conn_creds)
+        gold_dates_df = gold_dates_df.join(old_gold_dates_df, on="order_date", how="left_anti")
+        gold_dates_df.write.jdbc(conn_url, "public.dates", mode="append", properties=conn_creds)
 
         logging.info("Load data to `out_of_stock` table at Gold layer...")
         gold_oos_df = oos_src_df \
-            .select(oos_src_df.product_id, oos_src_df.date) \
+            .select(oos_src_df.product_id.cast(IntegerType())
+                  , oos_src_df.date.cast(DateType())) \
             .withColumn('store_id', F.lit(None).cast(IntegerType()))
-        
-        gold_oos_df.write.jdbc(conn_url, "out_of_stock", mode="append", properties=conn_creds)
+        old_gold_oos_df = self.spark.read.jdbc(conn_url, "public.out_of_stock", properties=conn_creds)
+        gold_oos_df = gold_oos_df.join(old_gold_oos_df
+              , on=["product_id", "order_date", "store_id"]
+              , how="left_anti")
+        gold_oos_df.write.jdbc(conn_url, "public.out_of_stock", mode="append", properties=conn_creds)

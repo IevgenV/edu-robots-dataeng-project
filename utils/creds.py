@@ -82,6 +82,17 @@ class Credentials:
         }
 
     @staticmethod
+    def get_gold_creds(conn_id:str) -> dict:
+        conn_dshop = BaseHook.get_connection(conn_id)
+        return {
+            'host': conn_dshop.host
+            , 'port': conn_dshop.port
+            , 'database': "gold"
+            , 'user': conn_dshop.login
+            , 'password': conn_dshop.password
+        }
+
+    @staticmethod
     def get_spark_creds() -> dict:
         conn_spark = BaseHook.get_connection(CONN_SPARK_ID)
         return {

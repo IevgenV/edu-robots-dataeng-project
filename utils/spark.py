@@ -17,5 +17,5 @@ def open_file_as_df(spark:SparkSession, fpath:pathlib.Path) -> DataFrame:
     if src_data_format not in SparkDefaults.SUPPORTED_SRC_FORMATS:
         raise TypeError("Source file need to have one "
                         f"of the supported extensions: {SparkDefaults.SUPPORTED_SRC_FORMATS}.")
-    df = spark.read.format(src_data_format).load(fpath.as_posix())
+    df = spark.read.option("header", "true").format(src_data_format).load(fpath.as_posix())
     return df

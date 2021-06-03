@@ -23,7 +23,7 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='oos_dag_0_0_5'
+      dag_id='oos_dag_0_0_9'
     , description='Load OOS Data from remote API to HDFS Bronze, clear and verify, then put into the Silver.'
     , schedule_interval='@daily'
     , start_date=datetime(2021, 1, 1, 23)  # <- load data each evening at 11 p.m.
@@ -58,7 +58,7 @@ with dag:
             , jdbc_driver_path = SparkDefaults.DEFAULT_SPARK_JDBC_DRIVER_PATH
             , src_path=DATA_PATH_OOS_SILVER
             , spark_master="local"
-            , spark_app_name="oos_app"
+            , spark_app_name="load_oos_app"
     )
 
 oos_extract_task >> oos_transform_task >> oos_load_task

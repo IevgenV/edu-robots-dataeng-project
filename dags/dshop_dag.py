@@ -24,7 +24,7 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='dshop_dag_0_0_5'
+      dag_id='dshop_dag_0_0_9'
     , description='Load data from `dshop` database to Bronze, clear and verify then put into the Silver. After all, load data to Gold Greenplum database.'
     , schedule_interval='@daily'
     , start_date=datetime(2021, 6, 2, 5)  # <- load data each morning at 5 a.m.
@@ -60,7 +60,7 @@ with dag:
             , src_path=DATA_PATH_OOS_BRONZE
             , dst_path=DATA_PATH_OOS_SILVER
             , spark_master="local"
-            , spark_app_name="dshop_app"
+            , spark_app_name="transform_dshop_app"
         )
         transform_tasks.append(transform_task)
 
@@ -79,7 +79,7 @@ with dag:
             , jdbc_driver_path = SparkDefaults.DEFAULT_SPARK_JDBC_DRIVER_PATH
             , src_path=DATA_PATH_OOS_SILVER
             , spark_master="local"
-            , spark_app_name="dshop_app"
+            , spark_app_name="load_dshop_app"
     )
 
 for extract_task, transform_task in zip(extract_tasks, transform_tasks):
