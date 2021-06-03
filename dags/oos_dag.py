@@ -23,7 +23,7 @@ DEFAULT_ARGS = {
 }
 
 dag = DAG(
-      dag_id='oos_dag_0_0_9'
+      dag_id='oos_dag_0_1_0'
     , description='Load OOS Data from remote API to HDFS Bronze, clear and verify, then put into the Silver.'
     , schedule_interval='@daily'
     , start_date=datetime(2021, 1, 1, 23)  # <- load data each evening at 11 p.m.
