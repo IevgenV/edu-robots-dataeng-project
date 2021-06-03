@@ -19,7 +19,7 @@ class SparkOperator(BaseOperator):
                , src_path:Union[pathlib.Path, str] = HDFSDefaults.DEFAULT_BRONZE_PATH
                , dst_path:Union[pathlib.Path, str] = HDFSDefaults.DEFAULT_SILVER_PATH
                , spark_master:str = SparkDefaults.DEFAULT_SPARK_MASTER
-               , spark_app_name:str = Credentials.CONN_SPARK_ID
+               , spark_app_name:str = Credentials.DEFAULT_CONN_SPARK_ID
                , write_mode:str = "append"
                , *args, **kwargs):
         assert src_path is not None, "`src_path` argument can't be specified as None"
@@ -28,7 +28,7 @@ class SparkOperator(BaseOperator):
         spark_master = spark_master if spark_master is not None \
                        else SparkDefaults.DEFAULT_SPARK_MASTER
         spark_app_name = spark_app_name if spark_app_name is not None \
-                         else Credentials.CONN_SPARK_ID
+                         else Credentials.DEFAULT_CONN_SPARK_ID
 
         src_path = src_path if isinstance(src_path, pathlib.Path) \
                    else pathlib.Path(src_path) 
@@ -38,10 +38,9 @@ class SparkOperator(BaseOperator):
         self.src_path = src_path
         self.dst_path = dst_path
         self.write_mode = write_mode
-        self.spark = SparkSession.builder \
-                                 .master(spark_master) \
-                                 .appName(spark_app_name) \
-                                 .getOrCreate()
+        logging.info("Create Spark session...")
+        self.spark = self.spark_create(spark_master, spark_app_name)
+        logging.info("Spark session created.")
 
         dst_data_format = dst_path.suffix.lstrip('.')
         if dst_data_format in SparkDefaults.SUPPORTED_DST_FORMATS:
@@ -49,3 +48,9 @@ class SparkOperator(BaseOperator):
                            f"of the supported extensions: {SparkDefaults.SUPPORTED_DST_FORMATS}.")    
 
         super().__init__(*args, **kwargs)
+
+    def spark_create(self, spark_master, spark_app_name):
+        return SparkSession.builder \
+                           .master(spark_master) \
+                           .appName(spark_app_name) \
+                           .getOrCreate()

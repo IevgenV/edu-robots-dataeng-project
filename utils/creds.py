@@ -8,8 +8,8 @@ class Credentials:
     DEFAULT_DB_CONN_ID = "dshop_db_server"
     DEFAULT_HDFS_CONN_ID = "hdfs_server"
     DEFAULT_SERVER_NAME = "prod_server"
-    CONN_SPARK_ID = "spark_server"
-    CONN_GOLD_DB_ID = "gold_db_server"
+    DEFAULT_CONN_SPARK_ID = "spark_server"
+    DEFAULT_CONN_GOLD_DB_ID = "gold_db_server"
 
     DEFAULT_HDFS_CREDS = {
             'url': "http://127.0.0.1:50070"
@@ -20,6 +20,14 @@ class Credentials:
           'host': 'localhost'
         , 'port': '5432'
         , 'database': 'dshop'
+        , 'user': 'pguser'
+        , 'password': ''
+    }
+
+    DEFAULT_GOLD_DB_CREDS = {
+          'host': 'localhost'
+        , 'port': '5432'
+        , 'database': 'gold'
         , 'user': 'pguser'
         , 'password': ''
     }
